@@ -14,7 +14,8 @@
 /coverage
 
 .omc/
-
+.serena/
+.claude/
 # next.js
 /.next/
 /out/
