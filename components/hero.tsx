@@ -63,7 +63,10 @@ export default function Hero() {
           <p style={{ margin: 0, fontSize: "clamp(15px,1.3vw,18px)" }}>Computer Engineering and Digital Technology (CEDT)</p>
         </div>
         <croissant-3d size="0.9" force="0" label-font="italic 500 26px var(--font-cormorant), serif" style={{ position: "absolute", inset: 0 }} />
-        <div style={{ ...hint, opacity: `calc(1 - ${unfold} * 4)` }}>Scroll</div>
+        <div style={{ ...hint, flexDirection: "column", alignItems: "center", gap: 6, opacity: `calc(1 - ${unfold} * 4)` }}>
+          Scroll
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.6} strokeLinecap="round" strokeLinejoin="round" aria-hidden><path d="M12 4v16M6 14l6 6 6-6" /></svg>
+        </div>
         <div style={{ ...hint, color: "var(--color-neutral-700)", opacity: `calc(${unfold} * 3 - 2)` }}>Point at a layer to see what’s inside</div>
       </div>
     </section>
