@@ -1,9 +1,8 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import { usePathname, useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
+import { usePathname } from "next/navigation";
 import { OPEN_KEY } from "@/components/hero";
-import { prefersReducedMotion } from "@/lib/reveal";
 
 const PAGES: Record<string, { label: string; color: string }> = {
   "/": { label: "The croissant", color: "var(--color-accent)" },
@@ -23,17 +22,14 @@ const Crescent = () => (
   </svg>
 );
 
-// Full-screen loader: covers the first load and each page transition until the
-// document, fonts, above-the-fold images (and on Hero, the croissant) are ready.
+// Full-screen loader: covers the first load only, until the document, fonts,
+// above-the-fold images (and on Hero, the croissant) are ready. Tab switches navigate instantly.
 export default function PageLoader() {
   const pathname = usePathname();
-  const router = useRouter();
   const [shown, setShown] = useState(true);
-  const [fast, setFast] = useState(false);
-  const [target, setTarget] = useState(pathname);
-  const shownAt = useRef(0);
+  const [target] = useState(pathname);
 
-  // Intercept internal link clicks: show the loader briefly, then navigate.
+  // Links back to the opened croissant tell Hero to jump to the layers view.
   useEffect(() => {
     const onClick = (e: MouseEvent) => {
       if (e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
@@ -42,24 +38,19 @@ export default function PageLoader() {
       const u = new URL(a.href, location.href);
       if (u.origin !== location.origin || !(u.pathname in PAGES) || u.pathname === location.pathname) return;
       if (u.hash === "#layers") try { sessionStorage.setItem(OPEN_KEY, "1"); } catch {}
-      if (prefersReducedMotion()) return; // let <Link> navigate normally
-      e.preventDefault();
-      e.stopPropagation();
-      shownAt.current = performance.now();
-      setTarget(u.pathname); setFast(true); setShown(true);
-      setTimeout(() => router.push(u.pathname + u.search + u.hash), 260);
     };
     document.addEventListener("click", onClick, true);
     return () => document.removeEventListener("click", onClick, true);
-  }, [router]);
+  }, []);
 
-  // After each (initial or client) navigation, hide once the page is ready.
+  // Hide once the first page is ready.
   useEffect(() => {
+    if (!shown) return;
     const isHero = pathname === "/";
     let croissant = !isHero || !!window.__croissantReady;
     const onReady = () => { croissant = true; };
     document.addEventListener("croissant-ready", onReady, true);
-    const t0 = shownAt.current || performance.now();
+    const t0 = performance.now();
     let timer: ReturnType<typeof setTimeout>;
     const aboveFoldReady = () => [...document.images].every((img) => {
       const r = img.getBoundingClientRect();
@@ -68,16 +59,16 @@ export default function PageLoader() {
     const check = () => {
       const el = performance.now() - t0;
       const ready = document.readyState === "complete" && (!document.fonts || document.fonts.status === "loaded") && aboveFoldReady() && croissant && el > 450;
-      if (ready || el > (isHero ? 12000 : 8000)) { setShown(false); setTarget(pathname); shownAt.current = 0; return; }
+      if (ready || el > (isHero ? 12000 : 8000)) { setShown(false); return; }
       timer = setTimeout(check, 120);
     };
     check();
     return () => { clearTimeout(timer); document.removeEventListener("croissant-ready", onReady, true); };
-  }, [pathname]);
+  }, [pathname, shown]);
 
   const page = PAGES[target] ?? { label: "Loading", color: "var(--color-accent)" };
   return (
-    <div id="site-loader" role="status" aria-live="polite" data-hidden={shown ? undefined : ""} data-fast={fast ? "" : undefined}>
+    <div id="site-loader" role="status" aria-live="polite" data-hidden={shown ? undefined : ""}>
       <div style={{ position: "relative", width: 132, height: 132 }}>
         <svg width="132" height="132" viewBox="0 0 132 132" style={{ position: "absolute", inset: 0 }} aria-hidden="true">
           <circle cx="66" cy="66" r="52" fill="none" stroke="var(--color-divider)" strokeWidth="1" />
@@ -91,7 +82,7 @@ export default function PageLoader() {
       <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6, textAlign: "center", padding: "0 24px" }}>
         <div style={{ fontFamily: "var(--font-heading)", fontSize: 28, lineHeight: 1.1 }}>{page.label}</div>
         <div style={{ fontStyle: "italic", fontSize: 14, color: "var(--color-neutral-700)", animation: "site-breathe 1.8s ease-in-out infinite" }}>
-          {target === "/" && !fast ? "Baking the croissant" : "Unfolding the layer"}
+          {target === "/" ? "Baking the croissant" : "Unfolding the layer"}
         </div>
       </div>
     </div>
